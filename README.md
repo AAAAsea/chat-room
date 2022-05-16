@@ -1,24 +1,12 @@
-# cahtroom
+## vue+node的聊天室
+1. 后端是app.js
 
-## Project setup
+```node
+node app.js
 ```
+
+2. 开发者
+```node
 npm install
-```
-
-### Compiles and hot-reloads for development
-```
 npm run serve
 ```
-
-### Compiles and minifies for production
-```
-npm run build
-```
-
-### Lints and fixes files
-```
-npm run lint
-```
-
-### Customize configuration
-See [Configuration Reference](https://cli.vuejs.org/config/).
