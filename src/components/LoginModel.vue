@@ -31,7 +31,7 @@ h2{
 }
 input{
   height: 30px;
-  width: 100%;
+  width: 95%;
   padding: 0 10px;
 }
 .label{
