@@ -15,7 +15,7 @@
         <!-- 广场 -->
         <div 
         class="user"
-        @click="currentTarget = 'public'"
+        @click="currentTarget = 'public';initScroll();"
         :class="{active: currentTarget === 'public'}"
         >
           <img src="http://img95.699pic.com/photo/40168/4515.jpg_wh300.jpg" class="avatar">
@@ -27,7 +27,7 @@
         :class="{active: currentTarget === item.username}"
         v-for="(item, index) in users"
         :key="index"
-        @click="currentTarget = item.username;unReaded[item.username] = 0;"
+        @click="currentTarget = item.username;unReaded[item.username] = 0;initScroll();"
         >
           <img :src="item.avatar" class="avatar">
           <span class="name">{{item.username}}</span>
@@ -54,7 +54,7 @@
           <img 
             :src="item.avatar" 
             class="avatar" 
-            v-if="item.type === 'common'"
+            v-if="item.type !== 'system'"
             @click="currentTarget = item.username;unReaded[item.username] = 0;"
           >
             <!-- 文字消息 -->
@@ -64,13 +64,34 @@
               </div>
             </div>
             <!-- 文件消息 -->
-            <div class="content" v-if="item.type === 'file'">
+            <div 
+              class="content file" 
+              v-if="item.type === 'file'"
+            >
               <div class="bubble">
-                <label 
-                  class="iconfont icon-wenjianjia"
+                <a 
+                  :href="'http://localhost:3000/upload?fileName='+item.fileName"
+                  v-if="item.fileType.startsWith('image')"
                 >
-                <div class="bubble-cont">{{item.fileName}}</div>
-                </label>
+                  <img
+                    :href="'http://localhost:3000/upload?fileName='+item.fileName"
+                    style="
+                    margin: 10px 0; 
+                    borderRadius: 4px; 
+                    maxWidth: 100%;
+                    objectFit:cover;
+                    overflow:hidden" 
+                    :src="'http://localhost:3000/upload?fileName='+item.fileName"  
+                  >
+                </a>
+                <a 
+                  class="bubble-cont iconfont icon-wenjianjia" 
+                  v-else 
+                  :href="'http://localhost:3000/upload?fileName='+item.fileName"
+                  download=""
+                >
+                  {{item.fileName + '|' + item.fileType}}
+                </a>
               </div>
             </div>
           <!-- 系统消息 -->
@@ -144,6 +165,7 @@ const sendMessage = (e)=>{
   text.value = '';
 }
 socket.on('receiveMessage', data=>{
+  console.log(data)
   // 初始化
   if(!messages[data.fromName]){
     messages[data.fromName] = [];
@@ -166,10 +188,10 @@ socket.on('receiveMessage', data=>{
   // 私聊
   if(data.fromName)
   {
-
     // 是否是自己发的消息
     if(data.fromName === props.username)
     {
+      // console.log(data)
       // 时间
       if(new Date() - lastTime[data.toName] > 120000){
         messages[data.toName].push({
@@ -210,10 +232,14 @@ socket.on('receiveMessage', data=>{
     messages.public.push(data)
     lastTime.public = new Date();
   }
-  nextTick(()=>{
-    chatBoxRef.value.scrollTop = chatBoxRef.value.scrollHeight;
-  })
+  initScroll()
 })
+// 调整聊天窗口在最下面
+function initScroll(){
+  nextTick(()=>{
+  chatBoxRef.value.scrollTop = chatBoxRef.value.scrollHeight;
+})
+}
 // 增加和删除用户操作在App组件
 socket.on('addUser', data=>{
   // 时间
@@ -227,6 +253,7 @@ socket.on('addUser', data=>{
   lastTime.public = new Date();
   messages.public.push({
     class: 'in',
+    type: 'system',
     msg: data.username + "进来了"
   })
 })
@@ -242,6 +269,7 @@ socket.on('delUser', data=>{
   lastTime.public = new Date();
   messages.public.push({
     class: 'leave',
+    type: 'system',
     msg: data.username + "离开了"
   })
 })
@@ -250,15 +278,23 @@ const fileRef = ref('')
 function fileUpload(){
   // 拿到文件
   let file = fileRef.value.files[0];
-  let fr = new FileReader()
+  if(file.size > 1024*1024*10)
+  {
+    alert("文件不能大于10M")
+    return;
+  }
   // 二进制读取
+  let fr = new FileReader()
   fr.readAsArrayBuffer(file)
   fr.onload = ()=>{
+    console.log("发送文件")
     socket.emit('sendFile',{
-      name: file.name,
-      size: file.size,
-      type: file.type,
-      raw: fr.result
+      fileName: file.name,
+      fileSize: file.size,
+      fileType: file.type,
+      raw: fr.result,
+      toName: currentTarget.value,
+      fromName: props.username
     })
   }
 }
@@ -359,11 +395,27 @@ function fileUpload(){
     max-width: 81%;
     position: relative;
     border-radius: 4px;
-    padding: 10px;
     background: #b2e281;
+    padding: 0 10px;
   }
   .message-box .content .bubble-cont{
+    color: #000;
     word-break: break-all;
+    font-size: 14px;
+    line-height: 45px;
+  }
+  .message-box .file{
+    max-width: 50%;
+    overflow: hidden;
+    -webkit-line-clamp: 3; 
+    -webkit-box-orient: vertical;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .message-box .file .bubble-cont{
+    font-size: 14px;
+    line-height: 18px;
   }
   .other .content{
     background: white;
@@ -450,14 +502,14 @@ function fileUpload(){
   .redPoint{
     position: absolute;
     right: 8px;
-    padding: 2px;
-    width: 13px;
-    height: 13px;
-    line-height: 13px;
-    font-size: 11px;
-    text-align: center;
+    width: 16px;
+    height: 16px;
+    font-size: 13px;
     background-color: rgb(215, 3, 3);
-    border-radius: 10px;
+    border-radius: 7.5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
   .system{
     margin: 0 auto;
@@ -472,8 +524,8 @@ function fileUpload(){
   .time{
     font-size: 12px;
     color: white;
-    background: rgb(169, 169, 169);
-    padding: 2px 3px;
+    background: rgb(200, 200, 200);
+    padding: 1px 3px;
     border-radius: 5px;
   }
   .emoji{
@@ -488,9 +540,12 @@ function fileUpload(){
     margin-left: 10px;
     transition: .2s;
     cursor: pointer;
-
   }
-  .icon-wenjianjia:hover{
+  .bubble .icon-wenjianjia:hover{
+    color: rgb(0, 119, 255);
+    
+  }
+  .toolbar .icon-wenjianjia:hover{
     transform-origin: center;
     transform: scale(1.1);
     color: rgb(255,206,71)

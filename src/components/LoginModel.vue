@@ -1,8 +1,8 @@
 <template>
   <div id="login">
     <h2>登录</h2>
-    <div class="label">用户昵称</div>
-    <input type="text" v-model="name">
+    <div class="label" >用户昵称</div>
+    <input type="text" v-model="name" @keyup.enter="login">
     <button @click="login">登录</button>
   </div>
 </template>
@@ -41,21 +41,22 @@ input{
   margin: 10px 0;
 }
 button{
-  margin-top: 20px;
+  margin-top: 40px;
   float: right;
-  width: 60px;
+  width: 70px;
   height: 40px; 
   color: #fff; 
-  background: linear-gradient(0deg, rgba(0, 172, 238, 1) 0%, rgba(2, 126, 251, 1) 100%);
+  background: rgb(41,220,112);
   font-family: 'Lato', sans-serif;
   border-radius: 5px;
-  box-shadow: inset 2px 2px 2px 0px rgba(255, 255, 255, .5),
-  7px 7px 20px 0px rgba(0, 0, 0, .1),
-  4px 4px 5px 0px rgba(0, 0, 0, .1);
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
   cursor: pointer;
   border: none;
   position: relative;
   padding: 0;
+}
+
+button:hover{
+  background: rgb(45, 178, 98);
 }
 </style>

@@ -10,6 +10,10 @@ module.exports = defineConfig({
       '/api': {
         target: 'https://api.dzzui.com', //代理的服务地址
         changeOrigin: true, // needed for virtual hosted sites
+      },
+      '/upload': {
+        target: 'http://localhost:3000', //代理的服务地址
+        changeOrigin: true, // needed for virtual hosted sites
       }
     }
   },

@@ -5,8 +5,8 @@ export default function formatDate(time){
 		month = date.getMonth()+1,//月份是从0开始的
 		day = date.getDate(),
 		hour = date.getHours(),
-		min = date.getMinutes(),
-		sec = date.getSeconds();
+		min = date.getMinutes()
+		// sec = date.getSeconds();
 
 	var preArr = Array.apply(null,Array(10)).map(function(elem, index) {
 		return '0'+index;
@@ -17,8 +17,9 @@ export default function formatDate(time){
     newTime = (preArr[month]||month) + '-' + (preArr[day]||day) + ' ';
 	newTime += 
 				(preArr[hour]||hour) + ':' +
-				(preArr[min]||min) + ':' +
-				(preArr[sec]||sec);
+				(preArr[min]||min) 
+				// + ':' +
+				// (preArr[sec]||sec);
 
 	return newTime;			
 }
