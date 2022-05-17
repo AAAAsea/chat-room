@@ -1,6 +1,8 @@
 <template>
   <div id="chat">
+    <!-- 左侧用户栏 -->
     <div class="left">
+      <!-- 我 -->
       <div class="user">
         <img :src="userImg" class="avatar">
         <span class="name">{{username}}</span>
@@ -8,56 +10,99 @@
       <hr/>
       <h3 class="label">在线列表（{{users.length}}）</h3>
       <hr/>
+      <!-- 用户列表 -->
       <div class="users" >
+        <!-- 广场 -->
         <div 
         class="user"
         @click="currentTarget = 'public'"
         :class="{active: currentTarget === 'public'}"
         >
-          <img src="https://tse1-mm.cn.bing.net/th/id/R-C.29da32c0027b062d1bf812c9ccc0ba0b?rik=sGEZ1SPkZ9O4%2bQ&riu=http%3a%2f%2fn.sinaimg.cn%2fnews%2ftransform%2f20151126%2frio5-fxmazmz8864459.jpg&ehk=Q5%2bpUfPNzzCAWeDoJscIFVk5cCEfG6t4NIBzhkg9LSc%3d&risl=&pid=ImgRaw&r=0&sres=1&sresct=1" class="avatar">
+          <img src="http://img95.699pic.com/photo/40168/4515.jpg_wh300.jpg" class="avatar">
           <span class="name">广场</span>
         </div>
+        <!-- 个人用户 -->
         <div 
         class="user"
         :class="{active: currentTarget === item.username}"
         v-for="(item, index) in users"
         :key="index"
         @click="currentTarget = item.username;unReaded[item.username] = 0;"
-        v-show="item.username !== username"
         >
           <img :src="item.avatar" class="avatar">
           <span class="name">{{item.username}}</span>
+          <span v-if="item.username === username">(我)</span>
           <span class="redPoint" v-if="unReaded[item.username]">{{unReaded[item.username] > 99 ? '99+' : unReaded[item.username]}}</span>
         </div>
       </div>
     </div>
+    <!-- 右侧聊天栏 -->
     <div class="right">
-      <div class="title">{{currentTarget === 'public' ? '广场' : currentTarget}}</div>
+      <div class="title">
+        {{currentTarget === 'public' ? '广场' : currentTarget}}
+      </div>
       <hr/>
+      <!-- 信息展示区 -->
       <div class="chat-box" ref="chatBoxRef">
         <div 
           class="message-box" 
-          :class="{
-            other: item.username !== username, 
-            my: item.username === username
-            }"
+          :class="item.username !== username ? 'other' : 'my'"
           v-for="(item, index) in messages[currentTarget]"
           :key="index"
         >
-          <img :src="item.avatar" alt="" class="avatar" v-if="item.avatar">
-          <div class="content" v-if="item.avatar">
-            <div class="bubble">
-              <div class="bubble-cont">{{item.msg}}</div>
+          <!-- 用户消息 -->
+          <img 
+            :src="item.avatar" 
+            class="avatar" 
+            v-if="item.type === 'common'"
+            @click="currentTarget = item.username;unReaded[item.username] = 0;"
+          >
+            <!-- 文字消息 -->
+            <div class="content" v-if="item.type === 'common'">
+              <div class="bubble">
+                <div class="bubble-cont">{{item.msg}}</div>
+              </div>
             </div>
-          </div>
-          <div class="system" :class="item.class" v-else>{{item.msg}}</div>
+            <!-- 文件消息 -->
+            <div class="content" v-if="item.type === 'file'">
+              <div class="bubble">
+                <label 
+                  class="iconfont icon-wenjianjia"
+                >
+                <div class="bubble-cont">{{item.fileName}}</div>
+                </label>
+              </div>
+            </div>
+          <!-- 系统消息 -->
+          <div class="system" :class="item.class" v-if="item.type === 'system'">{{item.msg}}</div>
         </div>
       </div>
       <hr/>
+      <!-- 工具栏 -->
       <div class="toolbar">
-        😋
+        <DiscordPicker
+        class="emoji"
+        gif-format="md"
+        @emoji="text += $event"
+        />
+        <label 
+        class="iconfont icon-wenjianjia"
+        >
+        <input 
+          type="file" 
+          ref="fileRef" 
+          style="display:none;"
+          @change="fileUpload"
+          > 
+        </label>
       </div>
-      <textarea @keydown.enter="sendMessage" class="edit" contenteditable v-model="text"/>
+      
+      <!-- 输入框 -->
+      <textarea 
+        @keydown.enter="sendMessage" 
+        class="edit" 
+        v-model="text"
+      />
       <button @click="sendMessage">发送</button>
     </div>
   </div>
@@ -65,14 +110,22 @@
 
 <script setup>
 import {defineProps, nextTick, reactive, ref} from 'vue'
+import timeFormat from '@/utils/timeFormat'
+import DiscordPicker from 'vue3-discordpicker'
 const props = defineProps(['socket','username','users','userImg'])
 // eslint-disable-next-line vue/no-setup-props-destructure
 const socket = props.socket;
+// 未读消息记录
 const unReaded = reactive({})
+// 消息记录
 const messages = reactive({
   public: []
 })
-let lastTime = 0;
+// 最近一次信息时间
+let lastTime = reactive({
+  public: 0
+});
+// 当前聊天对象
 const currentTarget = ref('public')
 const text = ref('');
 const chatBoxRef = ref('')
@@ -91,7 +144,7 @@ const sendMessage = (e)=>{
   text.value = '';
 }
 socket.on('receiveMessage', data=>{
-
+  // 初始化
   if(!messages[data.fromName]){
     messages[data.fromName] = [];
   }
@@ -102,46 +155,113 @@ socket.on('receiveMessage', data=>{
   {
     unReaded[data.fromName] = 0;
   }
+  if(!lastTime[data.fromName])
+  {
+    lastTime[data.fromName] = 0;
+  }
+  if(!lastTime[data.toName])
+  {
+    lastTime[data.toName] = 0;
+  }
+  // 私聊
   if(data.fromName)
   {
+
+    // 是否是自己发的消息
     if(data.fromName === props.username)
     {
+      // 时间
+      if(new Date() - lastTime[data.toName] > 120000){
+        messages[data.toName].push({
+          type: 'system',
+          class: 'time',
+          msg: timeFormat(new Date())
+        })
+      }
+      lastTime[data.toName] = new Date();
       messages[data.toName].push(data)
     }else{
+      // 时间
+      if(new Date() - lastTime[data.fromName] > 120000){
+        messages[data.fromName].push({
+          type: 'system',
+          class: 'time',
+          msg: timeFormat(new Date())
+        })
+      }
+      lastTime[data.fromName] = new Date();
       messages[data.fromName].push(data)
+      // 小红点
       if(currentTarget.value !== data.fromName){
         unReaded[data.fromName]++;
       }
     }
-  }else{
-    if(new Date() - lastTime > 120000){
+  }
+  // 群聊
+  else{
+    // 时间
+    if(new Date() - lastTime.public > 120000){
       messages.public.push({
-        class: 'in',
-        msg: new Date().getHours() + ':' + new Date().getMinutes()
+        type: 'system',
+        class: 'time',
+        msg: timeFormat(new Date())
       })
-      lastTime = new Date();
     }
     messages.public.push(data)
-    
+    lastTime.public = new Date();
   }
   nextTick(()=>{
     chatBoxRef.value.scrollTop = chatBoxRef.value.scrollHeight;
   })
 })
-
+// 增加和删除用户操作在App组件
 socket.on('addUser', data=>{
+  // 时间
+  if(new Date() - lastTime.public > 120000){
+    messages.public.push({
+      class: 'time',
+      type: 'system',
+      msg: timeFormat(new Date())
+    })
+  }
+  lastTime.public = new Date();
   messages.public.push({
     class: 'in',
     msg: data.username + "进来了"
   })
 })
 socket.on('delUser', data=>{
+  // 时间 
+  if(new Date() - lastTime.public > 120000){
+    messages.public.push({
+      type: 'system',
+      class: 'time',
+      msg: timeFormat(new Date())
+    })
+  }
+  lastTime.public = new Date();
   messages.public.push({
     class: 'leave',
     msg: data.username + "离开了"
   })
 })
 
+const fileRef = ref('')
+function fileUpload(){
+  // 拿到文件
+  let file = fileRef.value.files[0];
+  let fr = new FileReader()
+  // 二进制读取
+  fr.readAsArrayBuffer(file)
+  fr.onload = ()=>{
+    socket.emit('sendFile',{
+      name: file.name,
+      size: file.size,
+      type: file.type,
+      raw: fr.result
+    })
+  }
+}
 </script>
 
 <style scoped>
@@ -187,6 +307,7 @@ socket.on('delUser', data=>{
     width: 45px;
     height: 45px;
     object-fit: cover;
+    cursor: pointer;
   }
   .name{
     padding: 10px;
@@ -320,16 +441,20 @@ socket.on('delUser', data=>{
     background: rgb(87, 94, 105);
   }
   .toolbar{
+    position: relative;
+    align-items: center;
+    display: flex;
     padding: 10px;
+    height: 40px;
   }
   .redPoint{
     position: absolute;
-    right: 10px;
-    padding: 3px;
-    width: 15px;
-    height: 15px;
-    line-height: 15px;
-    font-size: 13px;
+    right: 8px;
+    padding: 2px;
+    width: 13px;
+    height: 13px;
+    line-height: 13px;
+    font-size: 11px;
     text-align: center;
     background-color: rgb(215, 3, 3);
     border-radius: 10px;
@@ -343,5 +468,31 @@ socket.on('delUser', data=>{
   }
   .in{
     color: #888
+  }
+  .time{
+    font-size: 12px;
+    color: white;
+    background: rgb(169, 169, 169);
+    padding: 2px 3px;
+    border-radius: 5px;
+  }
+  .emoji{
+    margin-top: -1rem;
+  }
+  .vue3-discord-emojipicker{
+    margin-left: 100px;
+  }
+  .icon-wenjianjia{
+    font-size: 26px;
+    color: rgb(189, 188, 188);
+    margin-left: 10px;
+    transition: .2s;
+    cursor: pointer;
+
+  }
+  .icon-wenjianjia:hover{
+    transform-origin: center;
+    transform: scale(1.1);
+    color: rgb(255,206,71)
   }
 </style>

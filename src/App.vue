@@ -15,14 +15,8 @@ import ChatRoom from '@/components/ChatRoom.vue'
 import LoginModel from '@/components/LoginModel.vue'
 const { ref, reactive }=require("@vue/reactivity");
 
-// 1.连接socketio服务(作了代理)
+// 连接socketio服务(作了代理)
 let socket = io('/')
-
-// 当服务器收到pong时触发
-socket.on("pong", (data) => {
-  // data: 延迟多少ms
-  console.log("服务器收到pong-pong", data);
-});
 const isLogin = ref(false)
 const username = ref('')
 const userImg = ref('')
@@ -39,11 +33,10 @@ const login = (name)=>{
       avatar: userImg.value
     })
   })
-
-  
 }
 
 const users = reactive([])
+
 socket.on("loginSuccess", (allUsers)=>{
   console.log(allUsers)
   isLogin.value = true;

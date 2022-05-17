@@ -33,6 +33,8 @@ input{
   height: 30px;
   width: 95%;
   padding: 0 10px;
+  border: 1px solid rgb(113, 113, 113);
+  border-radius: 3px;
 }
 .label{
   font-size: .9em;
