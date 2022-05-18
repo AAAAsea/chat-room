@@ -1,11 +1,13 @@
 <template>
-  <LoginModel v-if="!isLogin" @change-login="login"/>
-  <ChatRoom
-  :socket="socket"
-  :username="username"
-  :userImg="userImg"
-  :users="users"
-  v-else/>
+  <div class="main">
+    <LoginModel v-if="!isLogin" @change-login="login"/>
+    <ChatRoom
+    :socket="socket"
+    :username="username"
+    :userImg="userImg"
+    :users="users"
+    v-else/>
+  </div>
 </template> 
 
 <script setup>
@@ -66,6 +68,8 @@ socket.on('delUser', data=>{
 })
 </script>
 
-<style>
-
+<style scoped>
+.main{
+  height: 100%;
+}
 </style>

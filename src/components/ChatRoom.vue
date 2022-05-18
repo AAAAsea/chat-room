@@ -7,9 +7,7 @@
         <img :src="userImg" class="avatar">
         <span class="name">{{username}}</span>
       </div>
-      <hr/>
       <h3 class="label">在线列表（{{users.length}}）</h3>
-      <hr/>
       <!-- 用户列表 -->
       <div class="users" >
         <!-- 广场 -->
@@ -38,12 +36,11 @@
     </div>
     <!-- 右侧聊天栏 -->
     <div class="right">
-      <div class="title">
-        {{currentTarget === 'public' ? '广场' : currentTarget}}
-      </div>
-      <hr/>
       <!-- 信息展示区 -->
       <div class="chat-box" ref="chatBoxRef">
+        <div class="title">
+          {{currentTarget === 'public' ? '广场' : currentTarget}}
+        </div>
         <div 
           class="message-box" 
           :class="item.username !== username ? 'other' : 'my'"
@@ -98,33 +95,33 @@
           <div class="system" :class="item.class" v-if="item.type === 'system'">{{item.msg}}</div>
         </div>
       </div>
-      <hr/>
-      <!-- 工具栏 -->
-      <div class="toolbar">
-        <DiscordPicker
-        class="emoji"
-        gif-format="md"
-        @emoji="text += $event"
-        />
-        <label 
-        class="iconfont icon-wenjianjia"
-        >
-        <input 
-          type="file" 
-          ref="fileRef" 
-          style="display:none;"
-          @change="fileUpload"
-          > 
-        </label>
+      <div class="bottom">
+        <!-- 工具栏 -->
+        <div class="toolbar">
+          <label 
+          class="iconfont icon-wenjianjia"
+          >
+          <input 
+            type="file" 
+            ref="fileRef" 
+            style="display:none;"
+            @change="fileUpload"
+            > 
+          </label>
+          <DiscordPicker
+          class="emoji"
+          gif-format="md"
+          @emoji="text += $event"
+          />
+        </div>
+        <!-- 输入框 -->
+          <textarea 
+            @keydown.enter="sendMessage" 
+            class="edit" 
+            v-model="text"
+          />
+          <button @click="sendMessage">发送</button>
       </div>
-      
-      <!-- 输入框 -->
-      <textarea 
-        @keydown.enter="sendMessage" 
-        class="edit" 
-        v-model="text"
-      />
-      <button @click="sendMessage">发送</button>
     </div>
   </div>
 </template>
@@ -278,6 +275,7 @@ const fileRef = ref('')
 function fileUpload(){
   // 拿到文件
   let file = fileRef.value.files[0];
+  if(!file) return;
   if(file.size > 1024*1024*10)
   {
     alert("文件不能大于10M")
@@ -304,18 +302,31 @@ function fileUpload(){
   #chat{
     display: flex;
     width: 1000px;
-    height: 100vh;
+    height: 100%;
     margin: 0 auto;
   }
+  @media screen and (max-width: 1000px) {
+    #chat{
+      display: flex;
+      width: 100%;
+      min-width: 500px;
+      height: 100%;
+      margin: 0 auto;
+    }
+  }
+  
   .left{
+    height: 100%;
     padding: 15px;
     box-sizing: border-box;
     background: rgb(46,50,56);
     flex: 1;
   }
   .right{
+    height: 100%;
     flex: 3;
     background: #eee;
+    position: relative;
   }
   .users{
     height: 85%;
@@ -361,17 +372,16 @@ function fileUpload(){
     border-bottom: 1px solid #777;
   }
   .title{
+    -webkit-app-region: drag;
     color: #000;
     text-align: center;
     font-size: 1.2em;
     line-height: 40px;
-  }
-  .right hr{
-    border-color: #ccc;
+    border-bottom: 1px solid #ccc;
   }
   .chat-box{
-    height: 62%;
-    padding: 20px;
+    height: 60%;
+    padding: 0 20px 5px 20px;
     overflow: auto;
   }
   .message-box{
@@ -433,6 +443,7 @@ function fileUpload(){
   }
   .my{
     flex-direction: row-reverse;
+    
   }
   .my .content{
     margin-right: 10px;
@@ -446,15 +457,20 @@ function fileUpload(){
     border-left-color: #b2e281;
     border-left-width: 4px
   }
+  .bottom{
+    height: 30%;
+  }
   .edit{
-    font-size: 1.3em;
+    position: relative;
+    font-size: 1.2em;
+    color: black;
     border:0;
     background: transparent;
     resize: none;
     box-sizing: border-box;
     padding: 10px;
     width: 100%;
-    height: 120px;
+    height: 80%;
     overflow: auto;
     outline: 0;
     word-break:break-all; 
@@ -471,8 +487,8 @@ function fileUpload(){
       border-radius: 0;
       background: rgba(129, 129, 129, 0.1);
   }
+
   button{
-    float: right;
     width: 60px;
     margin-right: 15px;
     height: 35px; 
@@ -483,7 +499,9 @@ function fileUpload(){
     transition: all 0.3s ease;
     cursor: pointer;
     border: none;
-    position: relative;
+    position: absolute;
+    right: 10px;
+    bottom: 6px;
     padding: 0;
   }
   button:hover{
@@ -496,8 +514,10 @@ function fileUpload(){
     position: relative;
     align-items: center;
     display: flex;
+    justify-content: space-between;
     padding: 10px;
     height: 40px;
+    border-top: 1px solid #ccc;
   }
   .redPoint{
     position: absolute;
@@ -535,15 +555,13 @@ function fileUpload(){
     margin-left: 100px;
   }
   .icon-wenjianjia{
-    font-size: 26px;
-    color: rgb(189, 188, 188);
-    margin-left: 10px;
+    font-size: 23px;
+    color: rgb(165, 165, 165);
     transition: .2s;
     cursor: pointer;
   }
   .bubble .icon-wenjianjia:hover{
     color: rgb(0, 119, 255);
-    
   }
   .toolbar .icon-wenjianjia:hover{
     transform-origin: center;

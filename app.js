@@ -35,7 +35,7 @@ io.on('connect', function (socket) {
     // 如果用户已经登录
     const user = users.find(item => item.username === data.username)
     if (user) {
-      socket.emit('loginError', { msg: '登录失败' })
+      socket.emit('loginError', { msg: '用户名已存在' })
       console.log('登录失败')
     } else {
       users.push(data)

@@ -12,6 +12,11 @@ import { defineEmits, ref } from 'vue';
 const name = ref('');
 const emit = defineEmits(['change-login']);
 const login = ()=>{
+  if(name.value.trim() === '')
+  {
+    alert("用户昵称不能为空")
+    return;
+  }
   emit('change-login', name.value)
 }
 </script>
@@ -21,7 +26,8 @@ const login = ()=>{
   overflow: hidden;
   border-radius: 5px;
   margin: 0 auto;
-  margin-top: 150px;
+  position: relative;
+  top: 150px;
   background: white;
   width: 400px;
   padding: 50px 30px;
