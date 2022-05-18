@@ -66,6 +66,7 @@
               v-if="item.type === 'file'"
             >
               <div class="bubble">
+                <!-- 如果是图片直接展示 -->
                 <a 
                   :href="'http://localhost:3000/upload?fileName='+item.fileName"
                   v-if="item.fileType.startsWith('image')"
@@ -82,12 +83,18 @@
                   >
                 </a>
                 <a 
-                  class="bubble-cont iconfont icon-wenjianjia" 
+                  class="bubble-cont" 
                   v-else 
                   :href="'http://localhost:3000/upload?fileName='+item.fileName"
                   download=""
                 >
-                  {{item.fileName + '|' + item.fileType}}
+                  <div class="file-info">
+                    <p>{{item.fileName}}</p>
+                    <span>{{fileSizeFormat(item.fileSize)}}</span>
+                  </div>
+                  <svg class="icon" aria-hidden="true">
+                    <use xlink:href="#icon-file1"></use>
+                  </svg>
                 </a>
               </div>
             </div>
@@ -129,6 +136,7 @@
 <script setup>
 import {defineProps, nextTick, reactive, ref} from 'vue'
 import timeFormat from '@/utils/timeFormat'
+import fileSizeFormat from '@/utils/fileSizeFormat'
 import DiscordPicker from 'vue3-discordpicker'
 const props = defineProps(['socket','username','users','userImg'])
 // eslint-disable-next-line vue/no-setup-props-destructure
@@ -325,7 +333,7 @@ function fileUpload(){
   .right{
     height: 100%;
     flex: 3;
-    background: #eee;
+    background: rgb(245,245,245);
     position: relative;
   }
   .users{
@@ -377,7 +385,7 @@ function fileUpload(){
     text-align: center;
     font-size: 1.2em;
     line-height: 40px;
-    border-bottom: 1px solid #ccc;
+    border-bottom: 1px solid rgb(231,231,231);
   }
   .chat-box{
     height: 60%;
@@ -400,32 +408,70 @@ function fileUpload(){
       border-radius: 0;
       background: rgba(129, 129, 129, 0.1);
   }
-
   .message-box .content{
     max-width: 81%;
     position: relative;
     border-radius: 4px;
     background: #b2e281;
     padding: 0 10px;
+    display: flex;
+    align-items: center;
   }
   .message-box .content .bubble-cont{
     color: #000;
     word-break: break-all;
     font-size: 14px;
-    line-height: 45px;
   }
   .message-box .file{
-    max-width: 50%;
-    overflow: hidden;
-    -webkit-line-clamp: 3; 
-    -webkit-box-orient: vertical;
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
+    min-height: 80px;
+    width: 30%;
+    background: white;
+  }
+  .message-box .file:hover{
+    background: rgb(235,235,235);
+  }
+  .message-box .file .bubble{
+    flex: 1;
+    height: 100%;
   }
   .message-box .file .bubble-cont{
+    height: 100%;
     font-size: 14px;
     line-height: 18px;
+    display: flex;
+    text-decoration: none;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .message-box .file .bubble-cont .file-info{
+    padding-right: 10px;
+    flex: 4;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-around;
+    padding: 5px 0;
+  }
+  .message-box .file .bubble-cont .file-info p{
+    columns: black;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+  }
+  .message-box .file .bubble-cont .file-info span{
+    color: rgb(183, 183, 183);
+    font-size: 13px;
+  }
+  .message-box .file .bubble-cont svg{
+    flex: 1;
+    width: 50px;
+    height: 50px;
+    font-size: 50px;
+    padding: 0;
+    text-align: center;
+    color: rgb(172, 172, 172);
   }
   .other .content{
     background: white;
@@ -456,6 +502,9 @@ function fileUpload(){
     content: "";
     border-left-color: #b2e281;
     border-left-width: 4px
+  }
+  .my .file::after{
+    border-left-color: white;
   }
   .bottom{
     height: 30%;
@@ -500,8 +549,8 @@ function fileUpload(){
     cursor: pointer;
     border: none;
     position: absolute;
-    right: 10px;
-    bottom: 6px;
+    right: 0px;
+    bottom: 15px;
     padding: 0;
   }
   button:hover{
@@ -517,7 +566,7 @@ function fileUpload(){
     justify-content: space-between;
     padding: 10px;
     height: 40px;
-    border-top: 1px solid #ccc;
+    border-top: 1px solid rgb(231,231,231);
   }
   .redPoint{
     position: absolute;
