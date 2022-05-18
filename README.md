@@ -8,7 +8,7 @@ npm install
 npm install socket.io
 node ./app.js
 ```
-### 3 启动
+### 3 启动前台
 #### 3.1 正常启动
 ```
 npm run serve
