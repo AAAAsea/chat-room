@@ -13,18 +13,19 @@
         <!-- 广场 -->
         <div 
         class="user"
-        @click="currentTarget = 'public';initScroll();"
+        @click="currentTarget = 'public';unReaded.public = 0; initScroll();"
         :class="{active: currentTarget === 'public'}"
         >
           <img src="http://img95.699pic.com/photo/40168/4515.jpg_wh300.jpg" class="avatar">
           <span class="name">广场</span>
+          <span class="redPoint" v-if="unReaded.public">{{unReaded.public > 99 ? '99+' : unReaded.public}}</span>
         </div>
         <!-- 个人用户 -->
         <div 
         class="user"
         :class="{active: currentTarget === item.username}"
-        v-for="(item, index) in users"
-        :key="index"
+        v-for="item in users"
+        :key="item.username"
         @click="currentTarget = item.username;unReaded[item.username] = 0;initScroll();"
         >
           <img :src="item.avatar" class="avatar">
@@ -134,15 +135,19 @@
 </template>
 
 <script setup>
-import {defineProps, nextTick, reactive, ref} from 'vue'
+import {defineProps, defineEmits, nextTick, reactive, ref} from 'vue'
 import timeFormat from '@/utils/timeFormat'
 import fileSizeFormat from '@/utils/fileSizeFormat'
 import DiscordPicker from 'vue3-discordpicker'
+
 const props = defineProps(['socket','username','users','userImg'])
+const emit = defineEmits(['updateUsers'])
 // eslint-disable-next-line vue/no-setup-props-destructure
 const socket = props.socket;
 // 未读消息记录
-const unReaded = reactive({})
+const unReaded = reactive({
+  public: 0
+})
 // 消息记录
 const messages = reactive({
   public: []
@@ -196,7 +201,7 @@ socket.on('receiveMessage', data=>{
     // 是否是自己发的消息
     if(data.fromName === props.username)
     {
-      // console.log(data)
+      emit('updateUsers', data.toName)
       // 时间
       if(new Date() - lastTime[data.toName] > 120000){
         messages[data.toName].push({
@@ -208,6 +213,7 @@ socket.on('receiveMessage', data=>{
       lastTime[data.toName] = new Date();
       messages[data.toName].push(data)
     }else{
+      emit('updateUsers', data.fromName)
       // 时间
       if(new Date() - lastTime[data.fromName] > 120000){
         messages[data.fromName].push({
@@ -235,6 +241,12 @@ socket.on('receiveMessage', data=>{
       })
     }
     messages.public.push(data)
+    // 小红点
+    if(currentTarget.value !== 'public')
+    {
+      unReaded.public++;
+    }
+    console.log(unReaded.public)
     lastTime.public = new Date();
   }
   initScroll()
@@ -328,6 +340,7 @@ function fileUpload(){
     padding: 15px;
     box-sizing: border-box;
     background: rgb(46,50,56);
+    position: relative;
     flex: 1;
   }
   .right{
@@ -337,7 +350,11 @@ function fileUpload(){
     position: relative;
   }
   .users{
-    height: 85%;
+    position: absolute;
+    top: 140px;
+    right: 0;
+    left: 15px;
+    bottom: 10px;
     overflow: auto;
   }
   .users::-webkit-scrollbar {/*滚动条整体样式*/
@@ -357,6 +374,11 @@ function fileUpload(){
     display: flex;
     align-items: center;
     cursor: pointer;
+    transition: .2s ease;
+    margin-right: 15px;
+  }
+  .user:hover{
+    background: rgb(87,94,105);
   }
   .avatar{
     width: 45px;
@@ -365,7 +387,12 @@ function fileUpload(){
     cursor: pointer;
   }
   .name{
-    padding: 10px;
+    padding: 0 10px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical; 
   }
   h3{
     color: white;

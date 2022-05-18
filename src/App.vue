@@ -6,6 +6,7 @@
     :username="username"
     :userImg="userImg"
     :users="users"
+    @updateUsers="updateUsers"
     v-else/>
   </div>
 </template> 
@@ -39,6 +40,17 @@ const login = (name)=>{
 
 const users = reactive([])
 
+const updateUsers = (name)=>{
+  for(let key in users){
+    if(users[key].username === name)
+    {
+      let tempUser = users[key];
+      users.splice(key, 1);
+      users.unshift(tempUser)
+      break;
+    }
+  }
+}
 socket.on("loginSuccess", (allUsers)=>{
   console.log(allUsers)
   isLogin.value = true;

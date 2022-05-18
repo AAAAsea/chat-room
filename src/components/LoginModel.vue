@@ -2,7 +2,7 @@
   <div id="login">
     <h2>登录</h2>
     <div class="label" >用户昵称</div>
-    <input type="text" v-model="name" @keyup.enter="login">
+    <input type="text" v-model="name" @keyup.enter="login" maxlength="10">
     <button @click="login">登录</button>
   </div>
 </template>
