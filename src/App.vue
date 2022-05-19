@@ -16,6 +16,7 @@
 import io from 'socket.io-client'
 import ChatRoom from '@/components/ChatRoom.vue'
 import LoginModel from '@/components/LoginModel.vue'
+import { ElMessage } from 'element-plus';
 const { ref, reactive }=require("@vue/reactivity");
 
 // 连接socketio服务(作了代理)
@@ -61,7 +62,10 @@ const updateUsers = (name)=>{
 }
 socket.on("loginSuccess", (allUsers)=>{
   // console.log(allUsers)
-  console.log("登陆成功")
+  ElMessage({
+    message: '登陆成功',
+    type: 'success',
+  })
   isLogin.value = true;
   users.splice(0)
   users.push(...allUsers);
@@ -94,7 +98,8 @@ socket.on('delUser', data=>{
 })
 
 socket.on('disconnect',()=>{
-  alert("长时间未操作，已断开连接...")
+  // alert("长时间未操作，已断开连接...")
+  ElMessage.error('长时间未操作，已断开连接...')
   isLogin.value = false;
   if(process.env.IS_ELECTRON)
   {
@@ -104,11 +109,11 @@ socket.on('disconnect',()=>{
 
 // 重新连接后，发送登录信息
 socket.on('reconnect', () => {
-  console.log('重新连接')
-  socket.emit('login', {
-    username: name,
-    avatar: userImg.value
-  })
+  // console.log('重新连接')
+  // socket.emit('login', {
+  //   username: name,
+  //   avatar: userImg.value
+  // })
 })
 
 </script>

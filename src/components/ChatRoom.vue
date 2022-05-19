@@ -67,7 +67,7 @@
               v-if="item.type !== 'system'"
               @click="currentTarget = item.username;unReaded[item.username] = 0;"
             >
-            <div class="content-box" :class="item.username !== username ? 'other' : 'my'">
+            <div class="content-box" >
               <!-- 用户昵称 -->
               <div class="nickname">
                 {{item.username}}
@@ -324,7 +324,7 @@ function fileUpload(){
   // 拿到文件
   let file = fileRef.value.files[0];
   if(!file) return;
-  if(file.size > 1024*1024*10)
+  if(file.size > 1024*1024*5)
   {
     alert("文件不能大于10M")
     return;
@@ -524,7 +524,7 @@ function minimize(){
   }
   .message-box .file{
     min-height: 80px;
-    width: 30%;
+    width: 100%;
     background: white;
   }
   .message-box .file:hover{
@@ -593,10 +593,10 @@ function minimize(){
   }
   .my{
     flex-direction: row-reverse;
-    align-items: flex-end;
   }
   .my .content-box{
     margin-right: 10px;
+    align-items: flex-end;
   }
   .my .content::after {
     position: absolute;

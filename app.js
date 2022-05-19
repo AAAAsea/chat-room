@@ -5,7 +5,7 @@ const app = express()
 // http服务器
 let server = require('http').Server(app)
 // socket
-let io = require('socket.io')(server,{maxHttpBufferSize:1024*1024*10}) // 限制最大10M
+let io = require('socket.io')(server,{maxHttpBufferSize:1024*1024*50}) // 限制最大10M
 
 // let path = require('path')
 // 记录所有已经登录过的用户

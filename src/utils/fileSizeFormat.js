@@ -4,5 +4,5 @@ export default function formatDate(size){
 	else if(size < 1024*1024)
 		return ~~(size/1024) + 'KB'
 	else if(size < 1024*1024*1024)
-		return ~~(size/1024) + 'M'		
+		return ~~(size/1024/1024) + 'M'		
 }
