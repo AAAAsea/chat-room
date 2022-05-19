@@ -60,7 +60,7 @@ io.on('connect', function (socket) {
     // 把当前用户的信息从users中删除
     const idx = users.findIndex(item => item.username === socket.username)
     users.splice(idx, 1)
-    // 如果登录了，告诉所有人，有人离开了聊天室
+    // 如果断联了，告诉所有人，有人离开了聊天室
     if(socket.username)
     {
       io.emit('delUser', {
@@ -69,7 +69,7 @@ io.on('connect', function (socket) {
       })
     }
     // 告诉所有人，userlist发生更新
-    io.emit('userList', users)
+    // io.emit('userList', users)
   })
 
   // 用户发送消息的功能

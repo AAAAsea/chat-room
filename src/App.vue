@@ -27,11 +27,17 @@ if(process.env.IS_ELECTRON){
   document.getElementById('app').style.overflow = "hidden";
 }
 let socket = io(socketUrl)
+setTimeout(() => {
+  console.log(socket)
+}, 1000);
 const isLogin = ref(false)
 const username = ref('')
 const userImg = ref('')
 
 const login = (name)=>{
+  if(!socket.connected)
+    socket = io(socketUrl)
+  // if(socket.connect)
   username.value = name;
   userImg.value = 'https://cravatar.cn/avatar/'+name+'?d=wavatar'
   socket.emit('login', {
@@ -55,6 +61,7 @@ const updateUsers = (name)=>{
 }
 socket.on("loginSuccess", (allUsers)=>{
   // console.log(allUsers)
+  console.log("登陆成功")
   isLogin.value = true;
   users.splice(0)
   users.push(...allUsers);

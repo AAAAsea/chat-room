@@ -51,7 +51,7 @@
         <span class="iconfont icon-4guanbi-2" @click="shutDown"></span>
       </div>
       <!-- 信息展示区 -->
-      <div class="chat-box" ref="chatBoxRef">
+      <div class="chat-box" ref="chatBoxRef" id="chat-box">
         <!-- 消息主窗口 -->
         <div 
           class="message-box" 
@@ -60,53 +60,60 @@
           :key="index"
         >
           <!-- 用户消息 -->
-          <img 
-            :src="item.avatar" 
-            class="avatar" 
-            v-if="item.type !== 'system'"
-            @click="currentTarget = item.username;unReaded[item.username] = 0;"
-          >
-            <!-- 文字消息 -->
-            <div class="content" v-if="item.type === 'common'">
-              <div class="bubble">
-                <div class="bubble-cont">{{item.msg}}</div>
-              </div>
-            </div>
-            <!-- 文件消息 -->
-            <div 
-              class="content file" 
-              v-if="item.type === 'file'"
+            <!-- 头像 -->
+            <img 
+              :src="item.avatar" 
+              class="avatar" 
+              v-if="item.type !== 'system'"
+              @click="currentTarget = item.username;unReaded[item.username] = 0;"
             >
-              <div class="bubble">
-                <!-- 如果是图片直接展示 -->
-                <a 
-                  :href="SERVER_URL + '/upload?fileName='+item.fileName"
-                  v-if="item.fileType.startsWith('image')"
-                >
-                  <img
-                    style="
-                    margin: 10px 0; 
-                    borderRadius: 4px; 
-                    maxWidth: 100%;
-                    objectFit:cover;
-                    overflow:hidden" 
-                    :src="SERVER_URL + '/upload?fileName='+item.fileName"
+            <div class="content-box" :class="item.username !== username ? 'other' : 'my'">
+              <!-- 用户昵称 -->
+              <div class="nickname">
+                {{item.username}}
+              </div>
+              <!-- 文字消息 -->
+              <div class="content" v-if="item.type === 'common'">
+                <div class="bubble">
+                  <div class="bubble-cont">{{item.msg}}</div>
+                </div>
+              </div>
+              <!-- 文件消息 -->
+              <div 
+                class="content file" 
+                v-if="item.type === 'file'"
+              >
+                <div class="bubble">
+                  <!-- 如果是图片直接展示 -->
+                  <a 
+                    :href="SERVER_URL + '/upload?fileName='+item.fileName"
+                    v-if="item.fileType.startsWith('image')"
                   >
-                </a>
-                <a 
-                  class="bubble-cont" 
-                  v-else 
-                  :href="SERVER_URL + '/upload?fileName='+item.fileName"
-                  download=""
-                >
-                  <div class="file-info">
-                    <p>{{item.fileName}}</p>
-                    <span>{{fileSizeFormat(item.fileSize)}}</span>
-                  </div>
-                  <svg class="icon" aria-hidden="true">
-                    <use xlink:href="#icon-file1"></use>
-                  </svg>
-                </a>
+                    <img
+                      style="
+                      margin: 10px 0; 
+                      borderRadius: 4px; 
+                      maxWidth: 100%;
+                      objectFit:cover;
+                      overflow:hidden" 
+                      :src="SERVER_URL + '/upload?fileName='+item.fileName"
+                    >
+                  </a>
+                  <a 
+                    class="bubble-cont" 
+                    v-else 
+                    :href="SERVER_URL + '/upload?fileName='+item.fileName"
+                    download=""
+                  >
+                    <div class="file-info">
+                      <p>{{item.fileName}}</p>
+                      <span>{{fileSizeFormat(item.fileSize)}}</span>
+                    </div>
+                    <svg class="icon" aria-hidden="true">
+                      <use xlink:href="#icon-file1"></use>
+                    </svg>
+                  </a>
+                </div>
               </div>
             </div>
           <!-- 系统消息 -->
@@ -171,7 +178,7 @@ let lastTime = reactive({
 // 当前聊天对象
 const currentTarget = ref('public')
 const text = ref('');
-const chatBoxRef = ref('')
+// const chatBoxRef = ref('')
 const sendMessage = (e)=>{
   // console.log(socket)
   e.preventDefault();
@@ -272,8 +279,9 @@ socket.on('receiveMessage', data=>{
 // 调整聊天窗口在最下面
 function initScroll(){
   nextTick(()=>{
-  chatBoxRef.value.scrollTop = chatBoxRef.value.scrollHeight;
-})
+    let chatBox = document.getElementById('chat-box')
+    chatBox.scrollTop = chatBox.scrollHeight + 200;
+  })
 }
 // 增加和删除用户操作在App组件
 socket.on('addUser', data=>{
@@ -291,6 +299,7 @@ socket.on('addUser', data=>{
     type: 'system',
     msg: data.username + "进来了"
   })
+  initScroll()
 })
 socket.on('delUser', data=>{
   // 时间 
@@ -307,6 +316,7 @@ socket.on('delUser', data=>{
     type: 'system',
     msg: data.username + "离开了"
   })
+  initScroll()
 })
 
 const fileRef = ref('')
@@ -489,13 +499,22 @@ function minimize(){
       background: rgba(129, 129, 129, 0.1);
   }
   .message-box .content{
-    max-width: 81%;
     position: relative;
     border-radius: 4px;
     background: #b2e281;
     padding: 0 10px;
     display: flex;
     align-items: center;
+  }
+  .message-box .content-box{
+    display: flex;
+    flex-direction: column;
+    max-width: 80%;
+  }
+  .message-box .content-box .nickname{
+    font-size: 13px;
+    color: rgb(178,178,178);
+    margin-top: -10px;
   }
   .message-box .content .bubble-cont{
     color: #000;
@@ -518,7 +537,7 @@ function minimize(){
   .message-box .file .bubble-cont{
     height: 100%;
     font-size: 14px;
-    line-height: 18px;
+    line-height: 14px;
     display: flex;
     text-decoration: none;
     align-items: center;
@@ -556,7 +575,8 @@ function minimize(){
   }
   .other .content{
     background: white;
-    margin-right: 10px;
+  }
+  .other .content-box{
     margin-left: 10px;
   }
   .other .content::before {
@@ -568,11 +588,14 @@ function minimize(){
     border-right-color: #fff;
     border-right-width: 4px
   }
+  .other{
+    align-items: flex-start;
+  }
   .my{
     flex-direction: row-reverse;
-    
+    align-items: flex-end;
   }
-  .my .content{
+  .my .content-box{
     margin-right: 10px;
   }
   .my .content::after {
