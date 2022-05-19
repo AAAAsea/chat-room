@@ -1,10 +1,12 @@
 const { defineConfig } = require('@vue/cli-service')
 module.exports = defineConfig({
   transpileDependencies: true,
+  productionSourceMap: false,
   devServer: {
+    
     proxy: {  //配置跨域
       '/socket.io': {
-        target: 'http://localhost:3000', //代理的服务地址
+        target: process.env.VUE_APP_SERVER_URL, //代理的服务地址
         changeOrigin: true, // needed for virtual hosted sites
       },
       '/api': {
@@ -12,9 +14,14 @@ module.exports = defineConfig({
         changeOrigin: true, // needed for virtual hosted sites
       },
       '/upload': {
-        target: 'http://localhost:3000', //代理的服务地址
+        target: process.env.VUE_APP_SERVER_URL, //代理的服务地址
         changeOrigin: true, // needed for virtual hosted sites
       }
     }
   },
+  pluginOptions: {
+    electronBuilder: {
+      preload: "src/preload.js"
+    }
+  }
 })

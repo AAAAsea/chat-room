@@ -10,7 +10,13 @@ let io = require('socket.io')(server,{maxHttpBufferSize:1024*1024*10}) // 限制
 // let path = require('path')
 // 记录所有已经登录过的用户
 const users = []
-
+// app.all('*', function (req, res, next) {
+//   res.header('Access-Control-Allow-Origin', '*');
+//   res.header('Access-Control-Allow-Headers', 'Content-Type');
+//   res.header('Access-Control-Allow-Methods', '*');
+//   res.header('Content-Type', 'application/json;charset=utf-8');
+//   next();
+// });
 server.listen(3000, () => {
   console.log('启动在 http://localhost:3000')
 })
@@ -68,7 +74,13 @@ io.on('connect', function (socket) {
 
   // 用户发送消息的功能
   socket.on('sendMessage', msg => {
-    console.log(msg)
+    console.log(socket.username+ ':' + msg)
+    // console.log(users)
+    const user = users.find(item => item.username === socket.username)
+    if(!user){
+      socket.disconnect(true);
+      return;
+    }
     // 广播给所有用户
     io.emit('receiveMessage', {
       username: socket.username,

@@ -1,8 +1,13 @@
 <template>
   <div id="login">
+    <!-- 控制按钮 -->
+    <div class="control" v-if="showControl">
+      <span class="iconfont icon-2zuixiaohua-2" @click="minimize"></span>
+      <span class="iconfont icon-4guanbi-2" @click="shutDown"></span>
+    </div>
     <h2>登录</h2>
     <div class="label" >用户昵称</div>
-    <input type="text" v-model="name" @keyup.enter="login" maxlength="10">
+    <input type="text" v-model="name" @keyup.enter="login" maxlength="10" autofocus="autofocus">
     <button @click="login">登录</button>
   </div>
 </template>
@@ -11,6 +16,8 @@
 import { defineEmits, ref } from 'vue';
 const name = ref('');
 const emit = defineEmits(['change-login']);
+const showControl = ref(process.env.IS_ELECTRON)
+console.log(process.env)
 const login = ()=>{
   if(name.value.trim() === '')
   {
@@ -19,23 +26,40 @@ const login = ()=>{
   }
   emit('change-login', name.value)
 }
+
+function shutDown(){
+  window.electron.ipcRenderer.send('shutDown')
+}
+function minimize(){
+  window.electron.ipcRenderer.send('minimize')
+}
 </script>
 
 <style scoped>
 #login{
+  -webkit-app-region: drag;
   overflow: hidden;
   border-radius: 5px;
   margin: 0 auto;
   position: relative;
-  top: 150px;
+  top: 50px;
   background: white;
   width: 400px;
+  height: 280px;
+  box-sizing: border-box;
   padding: 50px 30px;
+}
+
+@media screen and (max-height: 500px) {
+  #login{
+    top: 0;
+  }
 }
 h2{
   text-align: center;
 }
 input{
+  -webkit-app-region: no-drag;
   height: 30px;
   width: 95%;
   padding: 0 10px;
@@ -45,8 +69,10 @@ input{
 .label{
   font-size: .9em;
   margin: 10px 0;
+  -webkit-app-region: no-drag;
 }
 button{
+  -webkit-app-region: no-drag;
   margin-top: 40px;
   float: right;
   width: 70px;
@@ -65,4 +91,26 @@ button{
 button:hover{
   background: rgb(45, 178, 98);
 }
+.control{
+    position: absolute;
+    right: 0;
+    top: 0px;
+    z-index: 9;
+    -webkit-app-region: no-drag;
+    display: flex;
+  }
+  .control span{
+    padding: 3px 10px;
+    color: #444;
+    font-size: 12px;
+  }
+  .control span:hover{
+    background: rgb(226,226,226);
+    cursor: pointer;
+  }
+  .control span:last-child:hover{
+    background: rgb(251,115,115);
+    color: white;
+    cursor: pointer;
+  }
 </style>

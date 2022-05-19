@@ -37,11 +37,22 @@
     </div>
     <!-- 右侧聊天栏 -->
     <div class="right">
+
+      <!-- 标题栏 -->
+      <div class="title">
+        <!-- 标题 -->
+        <span>
+          {{currentTarget === 'public' ? '广场' : currentTarget}}
+        </span>
+      </div>
+      <!-- 控制按钮 -->
+      <div class="control" v-if="showControl">
+        <span class="iconfont icon-2zuixiaohua-2" @click="minimize"></span>
+        <span class="iconfont icon-4guanbi-2" @click="shutDown"></span>
+      </div>
       <!-- 信息展示区 -->
       <div class="chat-box" ref="chatBoxRef">
-        <div class="title">
-          {{currentTarget === 'public' ? '广场' : currentTarget}}
-        </div>
+        <!-- 消息主窗口 -->
         <div 
           class="message-box" 
           :class="item.username !== username ? 'other' : 'my'"
@@ -69,24 +80,23 @@
               <div class="bubble">
                 <!-- 如果是图片直接展示 -->
                 <a 
-                  :href="'http://localhost:3000/upload?fileName='+item.fileName"
+                  :href="SERVER_URL + '/upload?fileName='+item.fileName"
                   v-if="item.fileType.startsWith('image')"
                 >
                   <img
-                    :href="'http://localhost:3000/upload?fileName='+item.fileName"
                     style="
                     margin: 10px 0; 
                     borderRadius: 4px; 
                     maxWidth: 100%;
                     objectFit:cover;
                     overflow:hidden" 
-                    :src="'http://localhost:3000/upload?fileName='+item.fileName"  
+                    :src="SERVER_URL + '/upload?fileName='+item.fileName"
                   >
                 </a>
                 <a 
                   class="bubble-cont" 
                   v-else 
-                  :href="'http://localhost:3000/upload?fileName='+item.fileName"
+                  :href="SERVER_URL + '/upload?fileName='+item.fileName"
                   download=""
                 >
                   <div class="file-info">
@@ -127,6 +137,7 @@
             @keydown.enter="sendMessage" 
             class="edit" 
             v-model="text"
+            maxlength="500"
           />
           <button @click="sendMessage">发送</button>
       </div>
@@ -139,8 +150,9 @@ import {defineProps, defineEmits, nextTick, reactive, ref} from 'vue'
 import timeFormat from '@/utils/timeFormat'
 import fileSizeFormat from '@/utils/fileSizeFormat'
 import DiscordPicker from 'vue3-discordpicker'
-
-const props = defineProps(['socket','username','users','userImg'])
+const showControl = ref(process.env.IS_ELECTRON)
+console.log(process.env)
+const props = defineProps(['socket','username','users','userImg', 'SERVER_URL'])
 const emit = defineEmits(['updateUsers'])
 // eslint-disable-next-line vue/no-setup-props-destructure
 const socket = props.socket;
@@ -161,9 +173,15 @@ const currentTarget = ref('public')
 const text = ref('');
 const chatBoxRef = ref('')
 const sendMessage = (e)=>{
+  // console.log(socket)
   e.preventDefault();
   if(text.value === '')
   return;
+  if(currentTarget.value !== 'public' && !props.users.find(user=>user.username ===currentTarget.value))
+  {
+    alert('该用户已下线')
+    return;
+  }
   if(currentTarget.value === 'public')
     socket.emit('sendMessage', text.value)
   else
@@ -246,7 +264,7 @@ socket.on('receiveMessage', data=>{
     {
       unReaded.public++;
     }
-    console.log(unReaded.public)
+    // console.log(unReaded.public)
     lastTime.public = new Date();
   }
   initScroll()
@@ -316,6 +334,14 @@ function fileUpload(){
     })
   }
 }
+
+function shutDown(){
+  window.electron.ipcRenderer.send('shutDown')
+}
+function minimize(){
+  window.electron.ipcRenderer.send('minimize')
+}
+
 </script>
 
 <style scoped>
@@ -342,6 +368,7 @@ function fileUpload(){
     background: rgb(46,50,56);
     position: relative;
     flex: 1;
+    min-width: 200px;
   }
   .right{
     height: 100%;
@@ -407,15 +434,41 @@ function fileUpload(){
     border-bottom: 1px solid #777;
   }
   .title{
+    position: sticky;
+    top: 0;
     -webkit-app-region: drag;
+    background: rgb(245,245,245);
+    z-index: 2;
     color: #000;
     text-align: center;
     font-size: 1.2em;
     line-height: 40px;
     border-bottom: 1px solid rgb(231,231,231);
   }
+  .control{
+    position: absolute;
+    right: 0;
+    top: 0px;
+    z-index: 9;
+    -webkit-app-region: no-drag;
+    display: flex;
+  }
+  .control span{
+    padding: 3px 10px;
+    color: #444;
+    font-size: 12px;
+  }
+  .control span:hover{
+    background: rgb(226,226,226);
+    cursor: pointer;
+  }
+  .control span:last-child:hover{
+    background: rgb(251,115,115);
+    color: white;
+    cursor: pointer;
+  }
   .chat-box{
-    height: 60%;
+    height: 63%;
     padding: 0 20px 5px 20px;
     overflow: auto;
   }
@@ -448,6 +501,7 @@ function fileUpload(){
     color: #000;
     word-break: break-all;
     font-size: 14px;
+    padding: 10px 0;
   }
   .message-box .file{
     min-height: 80px;
@@ -534,7 +588,7 @@ function fileUpload(){
     border-left-color: white;
   }
   .bottom{
-    height: 30%;
+    height: 27%;
   }
   .edit{
     position: relative;

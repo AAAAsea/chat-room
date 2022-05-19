@@ -17,4 +17,9 @@ npm run serve
 ```
 npm run electron:serve
 ```
+### 4 打包
+```
+npm run build
+npm run electron:build
+```
 

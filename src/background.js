@@ -1,32 +1,64 @@
 'use strict'
 
-import { app, protocol, BrowserWindow } from 'electron'
+import { app, protocol, BrowserWindow, ipcMain } from 'electron'
 import { createProtocol } from 'vue-cli-plugin-electron-builder/lib'
 // import installExtension, { VUEJS3_DEVTOOLS } from 'electron-devtools-installer'
 const isDevelopment = process.env.NODE_ENV !== 'production'
-
+import path from 'path'
 // Scheme must be registered before the app is ready
 protocol.registerSchemesAsPrivileged([
   { scheme: 'app', privileges: { secure: true, standard: true } }
 ])
-
 async function createWindow() {
   // Create the browser window.
   const win = new BrowserWindow({
-    width: 1000,
-    height: 800,
+    width: 400,
+    height: 280,
     maxWidth: 1000,
-    minHeight: 400,
+    maxHeight: 800,
     minWidth: 500,
+    minHeight: 400,
     frame: false,
+    transparent: true,
+    resizable: true,
+    shadow: true,
     webPreferences: {
       // Use pluginOptions.nodeIntegration, leave this alone
       // See nklayman.github.io/vue-cli-plugin-electron-builder/guide/security.html#node-integration for more info
+      
       nodeIntegration: process.env.ELECTRON_NODE_INTEGRATION,
-      contextIsolation: !process.env.ELECTRON_NODE_INTEGRATION
+      contextIsolation: !process.env.ELECTRON_NODE_INTEGRATION,
+      webSecurity:false, // 允许跨域
+      preload: path.join(__dirname, "preload.js")
     }
   })
 
+  // 关闭窗口
+  ipcMain.once('shutDown',()=>{
+    app.exit()
+  })
+  // 关闭窗口
+  ipcMain.on('minimize',()=>{
+    console.log(win.maxWidth)
+    win.minimize()
+  })
+    // 未登录不允许调整窗口
+    let login = false;
+    win.on('will-resize',(e)=>{
+    if(!login){
+      e.preventDefault()
+    }
+  })
+  // 窗口重置
+  ipcMain.on('resize',(e, arg)=>{
+    login = arg;
+    if(arg){
+      win.setSize(1000, 800);
+    }else{
+      win.setSize(400, 280);
+    }
+    win.center()
+  })
   if (process.env.WEBPACK_DEV_SERVER_URL) {
     // Load the url of the dev server if in development mode
     await win.loadURL(process.env.WEBPACK_DEV_SERVER_URL)
@@ -35,6 +67,8 @@ async function createWindow() {
     createProtocol('app')
     // Load the index.html when not in development
     win.loadURL('app://./index.html')
+    // win.loadURL('https://chat.asea.fun')
+    // win.webContents.openDevTools()
   }
 }
 
