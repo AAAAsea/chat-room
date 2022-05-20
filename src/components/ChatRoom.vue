@@ -134,6 +134,7 @@
             @change="fileUpload"
             > 
           </label>
+          <span @click="store.state.paintBoardFlag = true" style="cursor:pointer">打开画板</span>
           <DiscordPicker
           class="emoji"
           gif-format="md"
@@ -159,6 +160,9 @@ import ChatIcon from '@/components/ChatIcon.vue'
 import timeFormat from '@/utils/timeFormat'
 import fileSizeFormat from '@/utils/fileSizeFormat'
 import DiscordPicker from 'vue3-discordpicker'
+import { useStore } from 'vuex'
+
+const store = useStore()
 const showControl = ref(process.env.IS_ELECTRON)
 console.log(process.env)
 const props = defineProps(['socket','username','users','userImg', 'SERVER_URL'])

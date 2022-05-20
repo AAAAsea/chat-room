@@ -178,4 +178,8 @@ io.on('connect', function (socket) {
       })
     }
   })
+
+  socket.on('draw', data=>{
+    io.emit('draw', data)
+  })
 })

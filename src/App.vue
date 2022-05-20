@@ -9,6 +9,10 @@
     SERVER_URL='https://chat.asea.fun'
     @updateUsers="updateUsers"
     v-else/>
+    <paint-board
+    v-if="store.state.paintBoardFlag"
+    :socket="socket"
+    />
   </div>
 </template> 
 
@@ -16,9 +20,11 @@
 import io from 'socket.io-client'
 import ChatRoom from '@/components/ChatRoom.vue'
 import LoginModel from '@/components/LoginModel.vue'
+import PaintBoard from '@/components/PaintBoard.vue'
 import { ElMessage } from 'element-plus';
+import { useStore } from 'vuex';
 const { ref, reactive }=require("@vue/reactivity");
-
+const store = useStore()
 // 连接socketio服务(作了代理)
 let socketUrl = '/';  
 // electron可以设置允许跨域
