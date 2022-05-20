@@ -28,9 +28,9 @@ if(process.env.IS_ELECTRON){
   document.getElementById('app').style.overflow = "hidden";
 }
 let socket = io(socketUrl)
-setTimeout(() => {
-  console.log(socket)
-}, 1000);
+// setTimeout(() => {
+//   // console.log(socket)
+// }, 1000);
 const isLogin = ref(false)
 const username = ref('')
 const userImg = ref('')
@@ -101,6 +101,7 @@ socket.on('disconnect',()=>{
   // alert("长时间未操作，已断开连接...")
   ElMessage.error('长时间未操作，已断开连接...')
   isLogin.value = false;
+  socket.connect()
   if(process.env.IS_ELECTRON)
   {
     window.electron.ipcRenderer.send('resize', false)

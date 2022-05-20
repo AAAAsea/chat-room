@@ -1,5 +1,7 @@
 <template>
   <div id="login">
+    <!-- 图标 -->
+    <chat-icon class="chat-icon"/>
     <!-- 控制按钮 -->
     <div class="control" v-if="showControl">
       <span class="iconfont icon-2zuixiaohua-2" @click="minimize"></span>
@@ -14,6 +16,7 @@
 
 <script setup>
 import { defineEmits, ref } from 'vue';
+import ChatIcon from '@/components/ChatIcon.vue'
 const name = ref('');
 const emit = defineEmits(['change-login']);
 const showControl = ref(process.env.IS_ELECTRON)
@@ -47,7 +50,7 @@ function minimize(){
   width: 400px;
   height: 280px;
   box-sizing: border-box;
-  padding: 50px 30px;
+  padding: 70px 30px 30px 30px;
 }
 
 @media screen and (max-height: 500px) {
@@ -112,5 +115,13 @@ button:hover{
     background: rgb(251,115,115);
     color: white;
     cursor: pointer;
+  }
+  .chat-icon{
+    position: absolute;
+    top: -60px;
+    left: -80px;
+    height: 200px;
+    width: 320px;
+    margin: 0 auto;
   }
 </style>

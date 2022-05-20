@@ -2,6 +2,7 @@
   <div id="chat">
     <!-- 左侧用户栏 -->
     <div class="left">
+      <chat-icon class="chat-icon"/>
       <!-- 我 -->
       <div class="user">
         <img :src="userImg" class="avatar">
@@ -154,6 +155,7 @@
 
 <script setup>
 import {defineProps, defineEmits, nextTick, reactive, ref} from 'vue'
+import ChatIcon from '@/components/ChatIcon.vue'
 import timeFormat from '@/utils/timeFormat'
 import fileSizeFormat from '@/utils/fileSizeFormat'
 import DiscordPicker from 'vue3-discordpicker'
@@ -200,7 +202,7 @@ const sendMessage = (e)=>{
   text.value = '';
 }
 socket.on('receiveMessage', data=>{
-  console.log(data)
+  // console.log(data)
   // 初始化
   if(!messages[data.fromName]){
     messages[data.fromName] = [];
@@ -379,6 +381,8 @@ function minimize(){
     position: relative;
     flex: 1;
     min-width: 200px;
+    padding-top: 80px;
+    box-sizing: border-box;
   }
   .right{
     height: 100%;
@@ -388,7 +392,7 @@ function minimize(){
   }
   .users{
     position: absolute;
-    top: 140px;
+    top: 210px;
     right: 0;
     left: 15px;
     bottom: 10px;
@@ -410,12 +414,12 @@ function minimize(){
     color: white;
     display: flex;
     align-items: center;
-    cursor: pointer;
     transition: .2s ease;
     margin-right: 15px;
   }
-  .user:hover{
+  .users .user:hover{
     background: rgb(87,94,105);
+    cursor: pointer;
   }
   .avatar{
     width: 45px;
@@ -720,5 +724,14 @@ function minimize(){
     transform-origin: center;
     transform: scale(1.1);
     color: rgb(255,206,71)
+  }
+  .chat-icon{
+    position: absolute;
+    top: -80px;
+    left: 0;
+    height: 250px;
+    width: 100%;
+    margin: 0 auto;
+    transform: scale(1.3);
   }
 </style>
