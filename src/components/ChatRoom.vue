@@ -134,7 +134,7 @@
             @change="fileUpload"
             > 
           </label>
-          <span @click="store.state.paintBoardFlag = true" style="cursor:pointer">打开画板</span>
+          <span @click="store.state.paintBoardFlag = true" style="cursor:pointer" v-if="currentTarget==='public'">打开画板</span>
           <DiscordPicker
           class="emoji"
           gif-format="md"

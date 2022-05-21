@@ -31,7 +31,7 @@ const store = useStore();
 const props = defineProps(['socket'])
 
 const canvasRef = ref('');
-const color = ref('');
+const color = ref('#000000');
 const predefineColors = ref([
   '#000000',
   '#ffffff',
@@ -91,11 +91,12 @@ const handleOpen = ()=>{
               x: (lastTwoPoints[0].x + lastTwoPoints[1].x) / 2,
               y: (lastTwoPoints[0].y + lastTwoPoints[1].y) / 2,
           }
-          drawLine(ctx, beginPoint, controlPoint, endPoint);
+          drawLine(ctx, beginPoint, controlPoint, endPoint, color.value);
           props.socket.emit('draw',{
             beginPoint,
             controlPoint,
-            endPoint
+            endPoint,
+            color: color.value
           })
           beginPoint = endPoint;
         }
@@ -127,11 +128,12 @@ const handleOpen = ()=>{
               x: (lastTwoPoints[0].x + lastTwoPoints[1].x) / 2,
               y: (lastTwoPoints[0].y + lastTwoPoints[1].y) / 2,
           }
-          drawLine(ctx, beginPoint, controlPoint, endPoint);
+          drawLine(ctx, beginPoint, controlPoint, endPoint, color.value);
           props.socket.emit('draw',{
             beginPoint,
             controlPoint,
-            endPoint
+            endPoint,
+            color: color.value
           })
           beginPoint = endPoint;
         }
@@ -140,23 +142,27 @@ const handleOpen = ()=>{
     
     // 收到draw事件
     props.socket.on('draw',data=>{
-      drawLine(ctx, data.beginPoint, data.controlPoint, data.endPoint);
+      drawLine(ctx, data.beginPoint, data.controlPoint, data.endPoint, data.color);
     })
-
+    // 收到clear事件
+    props.socket.on('clear',()=>{
+      ctx.clearRect(0,0,cvs.width,cvs.height);
+    })
     window.onresize = ()=>{
       cvs.width = dialog.offsetWidth - 40;
     }
-
+    // 清空
     let clearBtn = document.getElementById('clearBtn')
     clearBtn.onclick = ()=>{
       ctx.clearRect(0,0,cvs.width,cvs.height);
+      props.socket.emit('clear');
     }
   })
 
 }
 // 二次贝塞尔
-function drawLine(ctx, beginPoint, controlPoint, endPoint) {
-    ctx.strokeStyle = color.value;
+function drawLine(ctx, beginPoint, controlPoint, endPoint, color) {
+    ctx.strokeStyle = color;
     ctx.beginPath();
     ctx.moveTo(beginPoint.x, beginPoint.y);
     ctx.quadraticCurveTo(controlPoint.x, controlPoint.y, endPoint.x, endPoint.y);
