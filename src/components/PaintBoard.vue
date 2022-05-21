@@ -3,16 +3,21 @@
     v-model="store.state.paintBoardFlag"
     title="画板"
     width="60%"
-    :before-close="handleClose"
     class="dialog"
+    :fullscreen="isMobile()"
+    draggable
+    @open="handleOpen"
+    @close="handleClose"
+    height="100vh"
+    top="2vh"
   >
-    <canvas id="canvas" width="800" height="600">
-    </canvas>
+    <span>画笔颜色：</span>
+    <el-color-picker v-model="color" :predefine="predefineColors" />
+    <canvas id="canvas" width="800" height="500" ref="canvasRef" @change="change"/>
     <template #footer>
-      <span class="dialog-footer">
-        <el-button type="primary" @click="store.state.paintBoardFlag = false"
-          >关闭</el-button
-        >
+      <span class="dialog-footer" >
+        <el-button type="warning" id="clearBtn">清空</el-button>
+        <el-button type="primary" @click="store.state.paintBoardFlag = false">关闭</el-button>
       </span>
     </template>
   </el-dialog>
@@ -20,68 +25,146 @@
 
 <script setup>
 import {useStore} from 'vuex';
-import {defineProps} from 'vue'
+import {defineProps, nextTick, ref} from 'vue'
 
 const store = useStore();
 const props = defineProps(['socket'])
+
+const canvasRef = ref('');
+const color = ref('');
+const predefineColors = ref([
+  '#000000',
+  '#ffffff',
+  '#ff4500',
+  '#ff8c00',
+  '#ffd700',
+  '#90ee90',
+  '#00ced1',
+  '#1e90ff',
+  '#c71585',
+])
 
 let cvs;  
 let ctx;
 let dialog;
 let onDrawing = false;
-let startX, startY;
+let beginPoint;
+const points = []; // 记录点用于控制贝塞尔曲线
+// 由于dialog懒加载所以需要先获取到
+const handleOpen = ()=>{
+  nextTick(()=>{
+    cvs = document.getElementById('canvas');
+    dialog = document.getElementsByClassName('el-dialog')[0];
+    cvs.width = dialog.offsetWidth - 40;
+    cvs.height = isMobile() ? 500 : 400;
 
-setTimeout(() => {
-  cvs = document.getElementById('canvas');
-  dialog = document.getElementsByClassName('el-dialog')[0];
-  cvs.width = dialog.offsetWidth - 40;
-  cvs.height = dialog.offsetHeight*0.6 - 40;
-  ctx = cvs.getContext('2d');
-  cvs.addEventListener('mousedown',(e)=>{
-    startX = e.pageX - dialog.offsetLeft - cvs.offsetLeft || 0;
-    startY = e.pageY - dialog.offsetTop - cvs.offsetTop  || 0;
-    onDrawing = true;
-  })
-  cvs.addEventListener('mouseup',()=>{
-    onDrawing = false;
-  })
-  cvs.addEventListener('mouseleave',()=>{
-    onDrawing = false;
-  })
-  cvs.addEventListener('mousemove',(e)=>{
-    if(onDrawing){
-      // console.log(e.pageX, dialog.offsetLeft + cvs.offsetLeft)
-      let x = e.pageX - dialog.offsetLeft - cvs.offsetLeft || 0;
-      let y = e.pageY - dialog.offsetTop - cvs.offsetTop  || 0;
-      console.log(x,y)
-      drawLine(ctx, startX, startY, x, y, 1);
-      props.socket.emit('draw',{
-        startX,
-        startY,
-        x,
-        y
-      })
-      startX = x;
-      startY = y;
+    ctx = cvs.getContext('2d');
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+    ctx.lineWidth = 2;
+
+    cvs.addEventListener('mousedown',(e)=>{
+      let rect = cvs.getBoundingClientRect(); // 可以解决有滚动时的位置
+      let x = e.pageX - rect.left * (cvs.width / rect.width) || 0;
+      let y = e.pageY  - rect.top * (cvs.height / rect.height) || 0;
+      beginPoint = {x, y}
+      onDrawing = true;
+    })
+    cvs.addEventListener('mouseup',()=>{
+      onDrawing = false;
+      points.splice(0)
+    })
+    cvs.addEventListener('mouseleave',()=>{
+      onDrawing = false;
+      points.splice(0)
+    })
+    cvs.addEventListener('mousemove',(e)=>{
+      if(onDrawing){
+        let rect = cvs.getBoundingClientRect();
+        let x = e.pageX - rect.left * (cvs.width / rect.width) || 0;
+        let y = e.pageY  - rect.top * (cvs.height / rect.height) || 0;
+        points.push({x,y})
+        if(points.length > 3){
+          const lastTwoPoints = points.slice(-2);
+          const controlPoint = lastTwoPoints[0];
+          const endPoint = {
+              x: (lastTwoPoints[0].x + lastTwoPoints[1].x) / 2,
+              y: (lastTwoPoints[0].y + lastTwoPoints[1].y) / 2,
+          }
+          drawLine(ctx, beginPoint, controlPoint, endPoint);
+          props.socket.emit('draw',{
+            beginPoint,
+            controlPoint,
+            endPoint
+          })
+          beginPoint = endPoint;
+        }
+      }
+    })
+    cvs.addEventListener('touchstart',(e)=>{
+      let touchPoint = e.touches[0];
+      let rect = cvs.getBoundingClientRect(); // 可以解决有滚动时的位置
+      let x = touchPoint.clientX - rect.left * (cvs.width / rect.width) || 0;
+      let y = touchPoint.pageY  - rect.top * (cvs.height / rect.height) || 0;
+      beginPoint = {x, y}
+      onDrawing = true;
+    })
+    cvs.addEventListener('touchend',()=>{
+      onDrawing = false;
+      points.splice(0)
+    })
+    cvs.addEventListener('touchmove',(e)=>{
+      if(onDrawing){
+        let touchPoint = e.touches[0];
+        let rect = cvs.getBoundingClientRect(); // 可以解决有滚动时的位置
+        let x = touchPoint.clientX - rect.left * (cvs.width / rect.width) || 0;
+        let y = touchPoint.pageY  - rect.top * (cvs.height / rect.height) || 0;
+        points.push({x,y})
+        if(points.length > 3){
+          const lastTwoPoints = points.slice(-2);
+          const controlPoint = lastTwoPoints[0];
+          const endPoint = {
+              x: (lastTwoPoints[0].x + lastTwoPoints[1].x) / 2,
+              y: (lastTwoPoints[0].y + lastTwoPoints[1].y) / 2,
+          }
+          drawLine(ctx, beginPoint, controlPoint, endPoint);
+          props.socket.emit('draw',{
+            beginPoint,
+            controlPoint,
+            endPoint
+          })
+          beginPoint = endPoint;
+        }
+      }
+    })
+    
+    // 收到draw事件
+    props.socket.on('draw',data=>{
+      drawLine(ctx, data.beginPoint, data.controlPoint, data.endPoint);
+    })
+
+    window.onresize = ()=>{
+      cvs.width = dialog.offsetWidth - 40;
+    }
+
+    let clearBtn = document.getElementById('clearBtn')
+    clearBtn.onclick = ()=>{
+      ctx.clearRect(0,0,cvs.width,cvs.height);
     }
   })
 
-}, 50);
-
-props.socket.on('draw',data=>{
-  drawLine(ctx, data.startX, data.startY, data.x, data.y, 1);
-})
-
-
-// 画线函数
-function drawLine(ctx, x1, y1, x2, y2, thick) {
-    // console.log(x2,y2)
+}
+// 二次贝塞尔
+function drawLine(ctx, beginPoint, controlPoint, endPoint) {
+    ctx.strokeStyle = color.value;
     ctx.beginPath();
-    ctx.moveTo(x1, y1);
-    ctx.lineTo(x2, y2);
-    ctx.lineWidth = thick;
-    ctx.strokeStyle = '#000';
+    ctx.moveTo(beginPoint.x, beginPoint.y);
+    ctx.quadraticCurveTo(controlPoint.x, controlPoint.y, endPoint.x, endPoint.y);
     ctx.stroke();
+}
+// isMobile
+function isMobile(){
+  return document.body.offsetWidth < 500
 }
 </script>
 

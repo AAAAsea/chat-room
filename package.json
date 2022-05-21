@@ -13,9 +13,11 @@
   },
   "main": "background.js",
   "dependencies": {
+    "colorpicker-v3": "^2.10.2",
     "core-js": "^3.8.3",
     "element-plus": "^2.2.0",
     "socket.io-client": "^4.5.0",
+    "vcolorpicker": "^1.1.0",
     "vue": "^3.2.13",
     "vue3-discordpicker": "^1.1.0",
     "vuex": "^4.0.2"
