@@ -8,7 +8,7 @@
         <img :src="userImg" class="avatar">
         <span class="name">{{username}}</span>
       </div>
-      <h3 class="label">在线列表（{{users.length}}）</h3>
+      <h3 class="label">好友列表（{{currentFriendNum}}/{{friends.length}}）</h3>
       <!-- 用户列表 -->
       <div class="users" >
         <!-- 广场 -->
@@ -18,21 +18,33 @@
         :class="{active: currentTarget === 'public'}"
         >
           <img src="http://img95.699pic.com/photo/40168/4515.jpg_wh300.jpg" class="avatar">
-          <span class="name">广场</span>
+          <span class="name">广场（{{users.length}}）</span>
           <span class="redPoint" v-if="unReaded.public">{{unReaded.public > 99 ? '99+' : unReaded.public}}</span>
         </div>
-        <!-- 个人用户 -->
+        <!-- 好友用户 -->
         <div 
         class="user"
-        :class="{active: currentTarget === item.username}"
-        v-for="item in users"
-        :key="item.username"
-        @click="currentTarget = item.username;unReaded[item.username] = 0;initScroll();"
+        :class="{active: currentTarget === item}"
+        v-for="item in friends"
+        :key="item"
+        @click="currentTarget = item;unReaded[item] = 0;initScroll();"
         >
-          <img :src="item.avatar" class="avatar">
-          <span class="name">{{item.username}}</span>
-          <span v-if="item.username === username">(我)</span>
-          <span class="redPoint" v-if="unReaded[item.username]">{{unReaded[item.username] > 99 ? '99+' : unReaded[item.username]}}</span>
+          
+          <el-popconfirm 
+            confirm-button-text="是的"
+            cancel-button-text="算了"
+            title="是否要删除该好友？"
+            @confirm="deleteFriend(item)"
+            >
+              <template #reference>
+                <img :src="'https://cravatar.cn/avatar/'+item+'?d=wavatar'" class="avatar" :class="{
+                  gray: !users.find(e=>e.username === item)
+                }">
+              </template>
+            </el-popconfirm>
+          <span class="name">{{item}}</span>
+          <span v-if="item === username">(我)</span>
+          <span class="redPoint" v-if="unReaded[item]">{{unReaded[item] > 99 ? '99+' : unReaded[item]}}</span>
         </div>
       </div>
     </div>
@@ -43,7 +55,7 @@
       <div class="title">
         <!-- 标题 -->
         <span>
-          {{currentTarget === 'public' ? '广场' : currentTarget}}
+          {{currentTarget === 'public' ? '广场（' + users.length + '）' : currentTarget}}
         </span>
       </div>
       <!-- 控制按钮 -->
@@ -62,11 +74,26 @@
         >
           <!-- 用户消息 -->
             <!-- 头像 -->
+            <el-popconfirm 
+            v-if="item.username !== username && !friends.includes(item.username)"
+            confirm-button-text="是的"
+            cancel-button-text="算了"
+            title="是否要添加对方为好友？"
+            @confirm="addFriend(item.username)"
+            >
+              <template #reference>
+                <img 
+                  :src="item.avatar" 
+                  class="avatar" 
+                  v-if="item.type !== 'system'"
+                  
+                >
+              </template>
+            </el-popconfirm>
             <img 
               :src="item.avatar" 
               class="avatar" 
-              v-if="item.type !== 'system'"
-              @click="currentTarget = item.username;unReaded[item.username] = 0;"
+              v-else-if="item.type !== 'system'"
             >
             <div class="content-box" >
               <!-- 用户昵称 -->
@@ -155,18 +182,22 @@
 </template>
 
 <script setup>
-import {defineProps, defineEmits, nextTick, reactive, ref} from 'vue'
+import {defineProps, defineEmits, nextTick, reactive, ref, computed} from 'vue'
 import ChatIcon from '@/components/ChatIcon.vue'
 import timeFormat from '@/utils/timeFormat'
 import fileSizeFormat from '@/utils/fileSizeFormat'
 import DiscordPicker from 'vue3-discordpicker'
 import { useStore } from 'vuex'
+import { ElMessage } from 'element-plus';
 
 const store = useStore()
 const showControl = ref(process.env.IS_ELECTRON)
 console.log(process.env)
-const props = defineProps(['socket','username','users','userImg', 'SERVER_URL'])
-const emit = defineEmits(['updateUsers'])
+const props = defineProps(['socket','username','users','userImg', 'SERVER_URL','friends'])
+const emit = defineEmits(['updateUsers', 'updateFriends'])
+const currentFriendNum = computed(()=>{
+  return props.friends.reduce((sum, friend) => sum + (props.users.find(user=>user.username === friend) ? 1 : 0), 0);
+})
 // eslint-disable-next-line vue/no-setup-props-destructure
 const socket = props.socket;
 // 未读消息记录
@@ -184,25 +215,30 @@ let lastTime = reactive({
 // 当前聊天对象
 const currentTarget = ref('public')
 const text = ref('');
-// const chatBoxRef = ref('')
 const sendMessage = (e)=>{
   // console.log(socket)
   e.preventDefault();
   if(text.value === '')
   return;
-  if(currentTarget.value !== 'public' && !props.users.find(user=>user.username ===currentTarget.value))
-  {
-    alert('该用户已下线')
-    return;
-  }
   if(currentTarget.value === 'public')
     socket.emit('sendMessage', text.value)
   else
-    socket.emit('sendMessageToOne', {
-      msg: text.value,
-      toName: currentTarget.value,
-      fromName: props.username
-    })
+    {
+      if(!props.users.find(user=>user.username ===currentTarget.value))
+      {
+        ElMessage(
+          {
+            message: '该用户已离线，将以离线消息发送',
+            type: 'warning'
+          }
+        )
+      }
+      socket.emit('sendMessageToOne', {
+        msg: text.value,
+        toName: currentTarget.value,
+        fromName: props.username
+      })
+    }
   text.value = '';
 }
 socket.on('receiveMessage', data=>{
@@ -357,7 +393,22 @@ function shutDown(){
 function minimize(){
   window.electron.ipcRenderer.send('minimize')
 }
-
+// 添加好友
+function addFriend(friendName){
+  socket.emit('addFriend',{
+    fromName: props.username,
+    toName: friendName
+  })
+  emit('updateFriends', {type: 'add', name: friendName})
+}
+// 删除好友 
+function deleteFriend(friendName){
+  socket.emit('deleteFriend',{
+    fromName: props.username,
+    toName: friendName
+  })
+  emit('updateFriends', {type: 'del', name: friendName})
+}
 </script>
 
 <style scoped>
@@ -737,5 +788,8 @@ function minimize(){
     width: 100%;
     margin: 0 auto;
     transform: scale(1.3);
+  }
+  .gray{
+    filter: grayscale(100%);
   }
 </style>

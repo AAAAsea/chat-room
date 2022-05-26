@@ -13,6 +13,10 @@
   >
     <span>画笔颜色：</span>
     <el-color-picker v-model="color" :predefine="predefineColors" />
+    <div class="width" style="display: flex;">
+      <span >画笔粗细：</span>
+      <el-slider v-model="width" :min="1"/>
+    </div>
     <canvas id="canvas" width="800" height="500" ref="canvasRef" @change="change"/>
     <template #footer>
       <span class="dialog-footer" >
@@ -32,6 +36,7 @@ const props = defineProps(['socket'])
 
 const canvasRef = ref('');
 const color = ref('#000000');
+const width = ref(1);
 const predefineColors = ref([
   '#000000',
   '#ffffff',
@@ -61,7 +66,6 @@ const handleOpen = ()=>{
     ctx = cvs.getContext('2d');
     ctx.lineJoin = 'round';
     ctx.lineCap = 'round';
-    ctx.lineWidth = 2;
 
     cvs.addEventListener('mousedown',(e)=>{
       let rect = cvs.getBoundingClientRect(); // 可以解决有滚动时的位置
@@ -91,12 +95,13 @@ const handleOpen = ()=>{
               x: (lastTwoPoints[0].x + lastTwoPoints[1].x) / 2,
               y: (lastTwoPoints[0].y + lastTwoPoints[1].y) / 2,
           }
-          drawLine(ctx, beginPoint, controlPoint, endPoint, color.value);
+          drawLine(ctx, beginPoint, controlPoint, endPoint, color.value, width.value);
           props.socket.emit('draw',{
             beginPoint,
             controlPoint,
             endPoint,
-            color: color.value
+            color: color.value,
+            width: width.value
           })
           beginPoint = endPoint;
         }
@@ -125,10 +130,10 @@ const handleOpen = ()=>{
           const lastTwoPoints = points.slice(-2);
           const controlPoint = lastTwoPoints[0];
           const endPoint = {
-              x: (lastTwoPoints[0].x + lastTwoPoints[1].x) / 2,
-              y: (lastTwoPoints[0].y + lastTwoPoints[1].y) / 2,
+            x: (lastTwoPoints[0].x + lastTwoPoints[1].x) / 2,
+            y: (lastTwoPoints[0].y + lastTwoPoints[1].y) / 2,
           }
-          drawLine(ctx, beginPoint, controlPoint, endPoint, color.value);
+          drawLine(ctx, beginPoint, controlPoint, endPoint, color.value, width.value);
           props.socket.emit('draw',{
             beginPoint,
             controlPoint,
@@ -142,7 +147,7 @@ const handleOpen = ()=>{
     
     // 收到draw事件
     props.socket.on('draw',data=>{
-      drawLine(ctx, data.beginPoint, data.controlPoint, data.endPoint, data.color);
+      drawLine(ctx, data.beginPoint, data.controlPoint, data.endPoint, data.color, data.width);
     })
     // 收到clear事件
     props.socket.on('clear',()=>{
@@ -161,7 +166,8 @@ const handleOpen = ()=>{
 
 }
 // 二次贝塞尔
-function drawLine(ctx, beginPoint, controlPoint, endPoint, color) {
+function drawLine(ctx, beginPoint, controlPoint, endPoint, color, width) {
+    ctx.lineWidth = width;
     ctx.strokeStyle = color;
     ctx.beginPath();
     ctx.moveTo(beginPoint.x, beginPoint.y);
@@ -180,4 +186,15 @@ function isMobile(){
 #canvas{
   border: 1px solid #666;
 }
+.width{
+  display: flex;
+  align-items: center;
+}
+.width span{
+  white-space: nowrap;
+}
+/* .width .el-slider {
+  margin-top: 0;
+  color: #666;
+} */
 </style>

@@ -16,6 +16,7 @@
 
 <script setup>
 import { defineEmits, ref } from 'vue';
+import { ElMessage } from 'element-plus';
 import ChatIcon from '@/components/ChatIcon.vue'
 const name = ref('');
 const emit = defineEmits(['change-login']);
@@ -24,7 +25,8 @@ console.log(process.env)
 const login = ()=>{
   if(name.value.trim() === '')
   {
-    alert("用户昵称不能为空")
+    ElMessage.error("用户昵称不能为空")
+    
     return;
   }
   emit('change-login', name.value)

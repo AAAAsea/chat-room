@@ -16,8 +16,8 @@ async function createWindow() {
     height: 280,
     maxWidth: 1000,
     maxHeight: 800,
-    minWidth: 500,
-    minHeight: 400,
+    minWidth: 400,
+    minHeight: 280,
     frame: false,
     transparent: true,
     resizable: true,
@@ -42,15 +42,16 @@ async function createWindow() {
     console.log(win.maxWidth)
     win.minimize()
   })
-    // 未登录不允许调整窗口
-    let login = false;
-    win.on('will-resize',(e)=>{
+  // 未登录不允许调整窗口
+  let login = false;
+  win.on('will-resize',(e)=>{
     if(!login){
       e.preventDefault()
     }
   })
   // 窗口重置
   ipcMain.on('resize',(e, arg)=>{
+    console.log(arg)
     login = arg;
     if(arg){
       win.setSize(1000, 800);

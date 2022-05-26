@@ -6,8 +6,10 @@
     :username="username"
     :userImg="userImg"
     :users="users"
+    :friends="friends"
     SERVER_URL='https://chat.asea.fun'
     @updateUsers="updateUsers"
+    @updateFriends="updateFriends"
     v-else/>
     <paint-board
     
@@ -54,27 +56,37 @@ const login = (name)=>{
 }
 
 const users = reactive([])
+const friends = reactive([])
 
 const updateUsers = (name)=>{
-  for(let key in users){
-    if(users[key].username === name)
+  for(let key in friends){
+    if(friends[key] === name)
     {
-      let tempUser = users[key];
-      users.splice(key, 1);
-      users.unshift(tempUser)
+      let tempUser = friends[key];
+      friends.splice(key, 1);
+      friends.unshift(tempUser)
       break;
     }
   } 
 }
-socket.on("loginSuccess", (allUsers)=>{
+
+const updateFriends = ({type, name})=>{
+  if(type === 'add'){
+    friends.unshift(name);
+  }else{
+    friends.splice(friends.indexOf(name), 1);
+  }
+}
+socket.on("loginSuccess", (data)=>{
   // console.log(allUsers)
   ElMessage({
-    message: '登陆成功',
+    message: '登录成功',
     type: 'success',
   })
   isLogin.value = true;
-  users.splice(0)
-  users.push(...allUsers);
+  users.splice(0);
+  users.push(...data.users);
+  friends.push(...data.friends);
   if(process.env.IS_ELECTRON)
   {
     window.electron.ipcRenderer.send('resize', true)
@@ -92,13 +104,30 @@ socket.on("loginError", (data)=>{
 socket.on('addUser', data=>{
   if(data.username !== username.value)
     if(!users.find(user=>user.username === data.username))
-      users.push(data)
+      {
+        users.push(data);
+        if(friends.includes(data.username))
+        {
+          ElMessage({
+            message: data.username + "上线了",
+            type: 'success'
+          })
+        }
+      }
 })
 
 socket.on('delUser', data=>{
   for(let i in users){
     if(users[i].username === data.username){
       users.splice(i,1);
+      if(friends.includes(data.username))
+      {
+        ElMessage({
+          message: data.username + "离线了",
+          type: 'warning'
+        })
+      }
+      break;
     }
   }
 })
@@ -123,6 +152,20 @@ socket.on('reconnect', () => {
   // })
 })
 
+socket.on('addFriend',(name)=>{
+  updateFriends({type:'add',name})
+  ElMessage({
+    message: name + "添加你为好友",
+    type: 'success'
+  })
+})
+socket.on('deleteFriend',(name)=>{
+  updateFriends({type:'del',name})
+  ElMessage({
+    message: name + "解除了和你的好友关系",
+    type: 'success'
+  })
+})
 </script>
 
 <style scoped>

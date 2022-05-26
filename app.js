@@ -9,7 +9,11 @@ let io = require('socket.io')(server,{maxHttpBufferSize:1024*1024*50}) // 限制
 
 // let path = require('path')
 // 记录所有已经登录过的用户
-const users = []
+const users = [];
+// 好友关系
+const friends = {};
+// 离线消息
+const offline_messages = []; 
 // app.all('*', function (req, res, next) {
 //   res.header('Access-Control-Allow-Origin', '*');
 //   res.header('Access-Control-Allow-Headers', 'Content-Type');
@@ -45,13 +49,28 @@ io.on('connect', function (socket) {
       console.log('登录失败')
     } else {
       users.push(data)
-      socket.emit('loginSuccess', users)
+      if(!friends[data.username])
+      {
+        friends[data.username] = new Set();
+      }
+      socket.emit('loginSuccess', {
+        users,
+        friends: [...friends[data.username]]
+      })
       console.log('登录成功')
       // 广播所有用户有用户添加
       io.emit('addUser', data)
       // 把登录成功的用户名和头像存储起来
       socket.username = data.username
       socket.avatar = data.avatar
+      // 处理离线消息
+      offline_messages.forEach((e,index)=>{
+        if(e.toName === socket.username){
+            // 发送给该用户
+            socket.emit('receiveMessage', e)
+            offline_messages.splice(index,1); // 发送以后清除离线消息
+        }
+      })
     }
   })
 
@@ -83,6 +102,12 @@ io.on('connect', function (socket) {
     }
     // 广播给所有用户
     io.emit('receiveMessage', {
+      username: socket.username,
+      avatar: socket.avatar,
+      msg,
+      type: 'common'
+    })
+    writeRecord({
       username: socket.username,
       avatar: socket.avatar,
       msg,
@@ -152,7 +177,13 @@ io.on('connect', function (socket) {
   socket.on('sendMessageToOne', data => {
     console.log("sendtoOne", data)
     var allSockets = io.sockets.sockets;
-    // console.log(allSockets)
+    // 消息记录
+    writeRecord({
+      ...data,
+      username: socket.username,
+      avatar: socket.avatar,
+      type: 'common'
+    })
     // 广播给指定用户
     let toSocket = null
     for (const [key,value] of allSockets) {
@@ -176,6 +207,21 @@ io.on('connect', function (socket) {
         avatar: socket.avatar,
         type: 'common'
       })
+    }else{
+      // 添加到离线消息队列里
+      offline_messages.push({
+        ...data,
+        username: socket.username,
+        avatar: socket.avatar,
+        type: 'common'
+      })
+      // 发送给自己
+      socket.emit('receiveMessage', {
+        ...data,
+        username: socket.username,
+        avatar: socket.avatar,
+        type: 'common'
+      })
     }
   })
 
@@ -185,4 +231,61 @@ io.on('connect', function (socket) {
   socket.on('clear', ()=>{
     io.emit('clear')
   })
+  
+  // 好友添加
+  socket.on('addFriend', data=>{
+    // 初始朋友化列表
+    if(!friends[data.fromName])
+    {
+      friends.fromName = new Set();
+    }
+    if(!friends[data.toName])
+    {
+      friends.toName = new Set();
+    }
+    // 添加好友关系
+    friends[data.fromName].add(data.toName);
+    friends[data.toName].add(data.fromName);
+    let allSockets = io.sockets.sockets;
+    // 广播给指定用户
+    let toSocket = null
+    for (const [key,value] of allSockets) {
+      if (value.username === data.toName) {
+        toSocket = key
+        socket.to(toSocket).emit('addFriend', data.fromName);
+      }
+    }
+  })
+  // 好友删除
+  socket.on('deleteFriend', data=>{
+    // 添加好友关系
+    friends[data.fromName].delete(data.toName);
+    friends[data.toName].delete(data.fromName);
+    let allSockets = io.sockets.sockets;
+    // 广播给指定用户
+    let toSocket = null
+    for (const [key,value] of allSockets) {
+      if (value.username === data.toName) {
+        toSocket = key
+        socket.to(toSocket).emit('deleteFriend', data.fromName);
+      }
+    }
+  })
 })
+
+function writeRecord(msg){
+  fs.readFile('./record.json', 'utf-8', (err, data) => {
+      if (err) {
+          throw err;
+      }
+      let record = JSON.parse(data.toString());
+      if(!record) record = [];
+      record.push(msg)
+      fs.writeFile('./record.json',JSON.stringify(record) , (err) => {
+          if (err) {
+              throw err;
+          }
+          console.log("消息已经保存");
+      });
+  });
+}
